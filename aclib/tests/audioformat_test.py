@@ -19,20 +19,20 @@ def test_mp3_read_tags():
     tags = MP3.read_tags(MP3_FN)
 
     expected_tags = Tags(
-        album_artist="Star Trek",
-        artist="Jean-Luc Picard",
-        title="Make It So",
-        album="Sample Tracks",
+        album_artist=u"Star Trek",
+        artist=u"Jean-Luc Picard",
+        title=u"Make It So",
+        album=u"Sample Tracks",
         year=2016,
         track_no=4,
         cd_no=3,
         cd_tracks=22,
         genre_id=132,
-        genre_name="Britpop",
-        comment="Comment!",
-        composer="Composer!",
-        original_artist="Original Artist!",
-        encoded_by="Encoded By!",
+        genre_name=u"BritPop",
+        comment=u"Comment!",
+        composer=u"Composer!",
+        original_artist=u"Original Artist!",
+        encoded_by=u"Encoded By!",
     )
 
     assert tags == expected_tags

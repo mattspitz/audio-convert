@@ -1,6 +1,6 @@
 import re
-import subprocess
 
+import eyed3
 from recordclass import recordclass
 
 Tags = recordclass(
@@ -57,65 +57,48 @@ class MP3(BaseFormat):
 
     @classmethod
     def read_tags(cls, fn):
-        output = subprocess.check_output([
-            "id3v2",
-            "--list-rfc822",
-            fn,
-        ])
-
-        tags = {}
-        for line in output.strip().split("\n"):
-            key, val = line.split(": ", 1)
-            tags[key] = val
-
-        if "TYER" in tags:
-            try:
-                year = int(tags["TYER"])
-            except ValueError:
-                year = tags["TYER"]
+        audiofile = eyed3.load(fn)
+        for f in dir(audiofile.tag):
+            if not f.startswith("_"):
+                pass#print f, getattr(audiofile.tag, f)
+        if audiofile.tag.best_release_date:
+            year = audiofile.tag.best_release_date.year
         else:
             year = None
 
-        if "TRCK" in tags:
-            trck = tags["TRCK"]
-            if "/" in trck:
-                track_no, cd_tracks = map(int, trck.split("/"))
-            else:
-                track_no = int(trck)
+        if audiofile.tag.track_num:
+            track_no, cd_tracks = audiofile.tag.track_num
         else:
             track_no, cd_tracks = None, None
 
-        if "TPOS" in tags:
-            tpos = int(tags["TPOS"])
+        if audiofile.tag.disc_num:
+            tpos, _ = audiofile.tag.disc_num
         else:
             tpos = None
 
-        if "TCON" in tags:
-            match = re.match(r"(?P<genre_name>.*) \((?P<genre_id>\d+)\)", tags["TCON"])
-            genre_name = match.group("genre_name")
-            genre_id = int(match.group("genre_id"))
+        if audiofile.tag.genre:
+            genre_name, genre_id = audiofile.tag.genre.name, audiofile.tag.genre.id
         else:
             genre_name, genre_id = None, None
 
-        if "COMM" in tags:
-            # format is like '()[]: Comment'
-            comment = tags["COMM"].split(": ", 1)[1]
-        else:
-            comment = None
+        extra_tags = {}
+        for k in ("COMM", "TCOM", "TOPE", "TENC"):
+            if k in audiofile.tag.frame_set:
+                extra_tags[k] = audiofile.tag.frame_set.get(k)[0].text
 
         return Tags(
-            album_artist=tags.get("TPE2"),
-            artist=tags.get("TPE1"),
-            title=tags.get("TIT2"),
-            album=tags.get("TALB"),
+            album_artist=audiofile.tag.album_artist,
+            artist=audiofile.tag.artist,
+            title=audiofile.tag.title,
+            album=audiofile.tag.album,
             year=year,
             track_no=track_no,
             cd_no=tpos,
             cd_tracks=cd_tracks,
             genre_id=genre_id,
             genre_name=genre_name,
-            comment=comment,
-            composer=tags.get("TCOM"),
-            original_artist=tags.get("TOPE"),
-            encoded_by=tags.get("TENC"),
+            comment=extra_tags.get("COMM"),
+            composer=extra_tags.get("TCOM"),
+            original_artist=extra_tags.get("TOPE"),
+            encoded_by=extra_tags.get("TENC"),
         )
