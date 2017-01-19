@@ -1,4 +1,4 @@
-class Tags(object):
+class Tags(dict):
     __slots__ = [
         "album_artist",
         "artist",
@@ -33,6 +33,8 @@ class Tags(object):
         original_artist=None,
         encoded_by=None,
     ):
+        super(Tags, self).__init__()
+
         self.album_artist = album_artist
         self.artist = artist
         self.title = title
@@ -48,37 +50,94 @@ class Tags(object):
         self.original_artist = original_artist
         self.encoded_by = encoded_by
 
+
     def __eq__(self, other):
         for k in self.__slots__:
             if getattr(self, k) != getattr(other, k):
                 return False
         return True
 
+
     def __repr__(self):
+        def get_slot(k):
+            v = getattr(self, k)
+            if isinstance(v, unicode):
+                v = v.encode("ascii", "replace")
+            if isinstance(v, basestring):
+                return '"{}"'.format(v)
+            return v
+
         return (
             "Tags("
-            + ", ".join("{}={}".format(k, getattr(self, k)) for k in self.__slots__)
+            + ", ".join("{}={}".format(k, get_slot(k)) for k in self.__slots__)
             + ")"
         )
 
 
-class BaseFormat(object):
-    @classmethod
-    def get_extension(cls):
-        """Returns extension for this format (e.g. 'mp3')"""
-        raise NotImplementedError()
+    def copy(self, **kwargs):
+        """Make a copy of this object, optionally mutating any fields"""
+        assert all(k in self.__slots__ for k in kwargs)
 
-    @classmethod
-    def read_tags(cls, fn):
-        """Returns Tags read from file"""
-        raise NotImplementedError()
+        tags = Tags()
+        for k in self.__slots__:
+            # kwargs take precedence
+            setattr(tags, k, kwargs.get(k, getattr(self, k)))
+        return tags
 
-    @classmethod
-    def write_tags(cls, fn, tags):
-        """Writes given Tags to file"""
-        raise NotImplementedError()
 
-    @classmethod
-    def decode(cls, fn, output_fn_wav):
-        """Decodes the provided file into the given output_fn_wav"""
-        raise NotImplementedError()
+def maybe_convert_int(v, fallback_on_failure=False):
+    try:
+        return int(v)
+    except ValueError:
+        if fallback_on_failure:
+            return v
+        raise
+
+
+def vorbiscomment_to_tags(vorbiscomment_output):
+    """Takes the line-by-line KEY=VALUE output from Vorbis-style comments (unicode) and converts it to a Tags() object"""
+    assert isinstance(vorbiscomment_output, unicode)
+
+    tags = {}
+    for line in vorbiscomment_output.split("\n"):
+        if line:
+            key, value = line.split("=", 1)
+            tags[key.lower()] = value
+
+    artist = tags.get("artist")
+
+    def get_int(k, fallback_on_failure=False):
+        if k not in tags:
+            return None
+        return maybe_convert_int(tags[k], fallback_on_failure=fallback_on_failure)
+
+
+    return Tags(
+        artist=artist,
+        album_artist=(
+            tags.get("albumartist")
+                or tags.get("album_artist")
+                or tags.get("album-artist")
+                or artist
+        ),
+
+        title=tags.get("title"),
+        album=tags.get("album"),
+        year=get_int("date", fallback_on_failure=True),
+
+        track_no = get_int("tracknumber"),
+        cd_no = get_int("discnumber"),
+        cd_tracks = get_int("tracktotal"),
+
+        genre_id=None,
+        genre_name=tags.get("genre"),
+
+        comment=tags.get("description"),
+        composer=tags.get("composer"),
+        original_artist=tags.get("performer"),
+
+        encoded_by=(
+            tags.get("encodedby")
+            or tags.get("encoded-by")
+        ),
+    )

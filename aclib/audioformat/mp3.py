@@ -114,7 +114,23 @@ def write_tags(fn, tags):
     if (tags.genre_id is not None
             or tags.genre_name is not None):
         # verify against eyed3.id3.genres or GenreMap and assign
-        raise NotImplementedError()
+        # genre_id trumps genre_name, if present
+        genre_map = eyed3.id3.GenreMap()
+        def _get_genre():
+            if tags.genre_id is not None:
+                genre = genre_map[tags.genre_id]
+                if genre:
+                    return genre
+
+            if tags.genre_name is not None:
+                genre = genre_map[tags.genre_name]
+                if genre:
+                    return genre
+
+            # fall back on just the name
+            return eyed3.id3.Genre(name=tags.genre_name)
+
+        f.tag.genre = _get_genre()
 
     if tags.comment is not None:
         for c in f.tag.comments:
