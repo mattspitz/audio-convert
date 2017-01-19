@@ -2,7 +2,9 @@ import subprocess
 
 import eyed3
 
-from . import Tags
+from .util import (
+    Tags,
+)
 
 LAME_OPTS = [
     "-m", "auto",

@@ -6,11 +6,13 @@ import shutil
 import tempfile
 
 from ..audioformat import (
-    Tags,
     faac,
     flac,
     mp3,
     vorbis,
+)
+from ..audioformat.util import (
+    Tags,
 )
 
 # http://doc.pytest.org/en/latest/tmpdir.html ?

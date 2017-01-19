@@ -1,6 +1,8 @@
 import subprocess
 
-from . import vorbiscomment_to_tags
+from .util import (
+    vorbiscomment_to_tags,
+)
 
 def read_tags(fn):
     output = subprocess.check_output([

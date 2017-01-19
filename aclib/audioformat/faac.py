@@ -1,7 +1,7 @@
 import re
 import subprocess
 
-from . import (
+from .util import (
     maybe_convert_int,
     Tags,
 )
