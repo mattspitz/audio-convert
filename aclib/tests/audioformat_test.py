@@ -94,19 +94,14 @@ def test_mp3_write_tags():
             track_no=2,
             cd_no=2,
             cd_tracks=45,
-            #genre_id=1,
-            #genre_name=u"Classic Rock",
+            genre_id=1,
+            genre_name=u"Classic Rock",
             comment=u"Different comment!",
             composer=u"Different composer!",
             original_artist=u"Different Original Artist!",
             encoded_by=u"Different Encoded By!",
         )
-
         mp3.write_tags(fn, new_tags)
-
-        # TODO remove this genre hack when it's supported
-        new_tags.genre_id = 132
-        new_tags.genre_name = "BritPop"
 
         tags = mp3.read_tags(fn)
         assert tags == new_tags
@@ -155,8 +150,37 @@ def test_mp3_track_cd():
 
 def test_mp3_genre():
     """Ensures that we properly validate genres"""
-    # TODO
-    pass
+    def _validate(
+        set_genre_id, set_genre_name,
+        expected_genre_id, expected_genre_name
+    ):
+        with _mp3_copy_fn() as fn:
+            mp3.write_tags(
+                fn,
+                Tags(
+                    genre_id=set_genre_id,
+                    genre_name=set_genre_name,
+                ),
+            )
+            tags = mp3.read_tags(fn)
+            assert tags.genre_id == expected_genre_id
+            assert tags.genre_name == expected_genre_name
+
+    # invalid genre_id
+    _validate(99999999, None, None, None)
+
+    # invalid genre_id, valid genre (fills in id)
+    _validate(99999999, u"Rock", 17, u"Rock")
+
+    # genre_id trumps genre_name
+    _validate(17, u"BritPop", 17, u"Rock")
+
+    # fall back on genre_name, anyway
+    _validate(99999999, u"Whatever", None, u"Whatever")
+
+    # only genre_name
+    _validate(None, u"Whatever", None, u"Whatever")
+    _validate(None, u"Rock", 17, u"Rock")
 
 
 def test_faac_read_tags():

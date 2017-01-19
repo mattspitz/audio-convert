@@ -113,15 +113,20 @@ def write_tags(fn, tags):
 
     if (tags.genre_id is not None
             or tags.genre_name is not None):
-        # verify against eyed3.id3.genres or GenreMap and assign
-        # genre_id trumps genre_name, if present
-        genre_map = eyed3.id3.GenreMap()
+        class MyGenreMap(eyed3.id3.GenreMap):
+            def __missing__(self, key):
+                # otherwise, need to catch KeyError for missing genre ids/names
+                return None
+
+        genre_map = MyGenreMap()
         def _get_genre():
+            # genre_id trumps genre_name, if present
             if tags.genre_id is not None:
                 genre = genre_map[tags.genre_id]
                 if genre:
                     return genre
 
+            # try to guess genre just from the name
             if tags.genre_name is not None:
                 genre = genre_map[tags.genre_name]
                 if genre:
@@ -129,7 +134,6 @@ def write_tags(fn, tags):
 
             # fall back on just the name
             return eyed3.id3.Genre(name=tags.genre_name)
-
         f.tag.genre = _get_genre()
 
     if tags.comment is not None:
