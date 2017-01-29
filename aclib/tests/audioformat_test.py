@@ -5,6 +5,14 @@ import os
 import shutil
 import tempfile
 
+from .util import (
+    FAAC_FN,
+    FLAC_FN,
+    MP3_FN,
+    VORBIS_FN,
+    WAV_FN,
+)
+
 from ..audioformat import (
     faac,
     flac,
@@ -14,21 +22,6 @@ from ..audioformat import (
 from ..audioformat.util import (
     Tags,
 )
-
-# http://doc.pytest.org/en/latest/tmpdir.html ?
-
-FIXTURES_DIR = os.path.join(
-    os.path.dirname(__file__),
-    "fixtures",
-)
-
-MP3_BASENAME = "makeitso.mp3"
-
-WAV_FN = os.path.join(FIXTURES_DIR, "makeitso.wav")
-FAAC_FN = os.path.join(FIXTURES_DIR, "makeitso.mp4")
-FLAC_FN = os.path.join(FIXTURES_DIR, "makeitso.flac")
-OGG_FN = os.path.join(FIXTURES_DIR, "makeitso.ogg")
-MP3_FN = os.path.join(FIXTURES_DIR, MP3_BASENAME)
 
 FAAC_FIXTURE_TAGS = Tags(
     album_artist=u"Star Trek",
@@ -44,11 +37,11 @@ FAAC_FIXTURE_TAGS = Tags(
     composer=u"Composer!",
     encoded_by=u"Encoded By!",
 )
-FLAC_FIXTURE_TAGS = OGG_FIXTURE_TAGS = FAAC_FIXTURE_TAGS.copy(
+FLAC_FIXTURE_TAGS = VORBIS_FIXTURE_TAGS = FAAC_FIXTURE_TAGS.copy(
     original_artist=u"Original Artist!",
 )
 
-MP3_FIXTURE_TAGS = OGG_FIXTURE_TAGS.copy(
+MP3_FIXTURE_TAGS = VORBIS_FIXTURE_TAGS.copy(
     genre_id=132,
 )
 
@@ -63,7 +56,7 @@ def _fixture_copy_gen(suffix, base_fn):
 _mp3_copy_fn = _fixture_copy_gen(".mp3", MP3_FN)
 _faac_copy_fn = _fixture_copy_gen(".mp4", FAAC_FN)
 _flac_copy_fn = _fixture_copy_gen(".flac", FLAC_FN)
-_ogg_copy_fn = _fixture_copy_gen(".ogg", OGG_FN)
+_vorbis_copy_fn = _fixture_copy_gen(".ogg", VORBIS_FN)
 
 
 @contextlib.contextmanager
@@ -72,12 +65,13 @@ def _tmpdir():
     yield tmpdir
     shutil.rmtree(tmpdir)
 
+
 def test_mp3_encode():
     with _tmpdir() as tmpdir:
         mp3.encode([WAV_FN], tmpdir)
-        mp3_fn = os.path.join(tmpdir, MP3_BASENAME)
-        assert os.path.getsize(mp3_fn) > 0
-        assert mp3.read_tags(mp3_fn) is None
+        encoded_fn = os.path.join(tmpdir, "makeitso.mp3")
+        assert os.path.getsize(encoded_fn) > 0
+        assert mp3.read_tags(encoded_fn) is None
 
 def test_mp3_read_tags():
     tags = mp3.read_tags(MP3_FN)
@@ -196,8 +190,8 @@ def test_flac_read_tags():
 
 
 def test_vorbis_read_tags():
-    tags = vorbis.read_tags(OGG_FN)
-    assert tags == OGG_FIXTURE_TAGS
+    tags = vorbis.read_tags(VORBIS_FN)
+    assert tags == VORBIS_FIXTURE_TAGS
 
 
 def _gen_end_to_end(input_fn, read_tags, decode):
@@ -229,4 +223,4 @@ def _gen_end_to_end(input_fn, read_tags, decode):
 
 test_faac_end_to_end = _gen_end_to_end(FAAC_FN, faac.read_tags, faac.decode)
 test_flac_end_to_end = _gen_end_to_end(FLAC_FN, flac.read_tags, flac.decode)
-test_vorbis_end_to_end = _gen_end_to_end(OGG_FN, vorbis.read_tags, vorbis.decode)
+test_vorbis_end_to_end = _gen_end_to_end(VORBIS_FN, vorbis.read_tags, vorbis.decode)

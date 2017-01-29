@@ -4,6 +4,8 @@ from .util import (
     vorbiscomment_to_tags,
 )
 
+EXTENSIONS = [".flac"]
+
 def read_tags(fn):
     output = subprocess.check_output([
         "metaflac",

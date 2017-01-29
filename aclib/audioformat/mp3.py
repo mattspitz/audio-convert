@@ -6,6 +6,8 @@ from .util import (
     Tags,
 )
 
+EXTENSIONS = [".mp3"]
+
 LAME_OPTS = [
     "-m", "auto",
     "-h",

@@ -6,6 +6,8 @@ from .util import (
     Tags,
 )
 
+EXTENSIONS = [".m4a", ".mp4", ".aac"]
+
 def read_tags(fn):
     output = subprocess.check_output([
         "faad",
