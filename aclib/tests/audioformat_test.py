@@ -11,6 +11,8 @@ from .util import (
     MP3_FN,
     VORBIS_FN,
     WAV_FN,
+
+    mktempdir,
 )
 
 from ..audioformat import (
@@ -18,6 +20,7 @@ from ..audioformat import (
     flac,
     mp3,
     vorbis,
+    wav,
 )
 from ..audioformat.util import (
     Tags,
@@ -59,15 +62,8 @@ _flac_copy_fn = _fixture_copy_gen(".flac", FLAC_FN)
 _vorbis_copy_fn = _fixture_copy_gen(".ogg", VORBIS_FN)
 
 
-@contextlib.contextmanager
-def _tmpdir():
-    tmpdir = tempfile.mkdtemp()
-    yield tmpdir
-    shutil.rmtree(tmpdir)
-
-
 def test_mp3_encode():
-    with _tmpdir() as tmpdir:
+    with mktempdir() as tmpdir:
         mp3.encode([WAV_FN], tmpdir)
         encoded_fn = os.path.join(tmpdir, "makeitso.mp3")
         assert os.path.getsize(encoded_fn) > 0
@@ -194,9 +190,15 @@ def test_vorbis_read_tags():
     assert tags == VORBIS_FIXTURE_TAGS
 
 
+def test_wav_read_tags():
+    tags = wav.read_tags(WAV_FN)
+    # no tags for wav files
+    assert tags == Tags()
+
+
 def _gen_end_to_end(input_fn, read_tags, decode):
     def f():
-        with _tmpdir() as tmpdir:
+        with mktempdir() as tmpdir:
             input_tags = read_tags(input_fn)
 
             wav_fn = os.path.join(tmpdir, "decoded.wav")
@@ -224,3 +226,4 @@ def _gen_end_to_end(input_fn, read_tags, decode):
 test_faac_end_to_end = _gen_end_to_end(FAAC_FN, faac.read_tags, faac.decode)
 test_flac_end_to_end = _gen_end_to_end(FLAC_FN, flac.read_tags, flac.decode)
 test_vorbis_end_to_end = _gen_end_to_end(VORBIS_FN, vorbis.read_tags, vorbis.decode)
+test_wav_end_to_end = _gen_end_to_end(WAV_FN, wav.read_tags, wav.decode)
