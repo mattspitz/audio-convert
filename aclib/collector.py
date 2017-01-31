@@ -23,7 +23,7 @@ class AudioFile(object):
         return os.path.splitext(self.path)[1].lower()
 
 
-    def read_tags():
+    def read_tags(self):
         return self.audio_module.read_tags(self.path)
 
 
@@ -82,6 +82,6 @@ def collect_audio_files(dir_fn):
 
     module, fns = files_by_audio_module.items()[0]
     return [
-        AudioFile(module, path)
+        AudioFile(module, os.path.join(dir_fn, path))
         for path in sorted(fns)
     ]
