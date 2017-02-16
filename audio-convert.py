@@ -2,6 +2,7 @@
 
 import argparse
 import operator
+import os
 
 from aclib import (
     audioformat,
@@ -62,9 +63,9 @@ class PendingAudioFile(object):
         )
 
         return os.path.join(
-            "{album_artist}".format(new_tags.album_artist),
-            "{year} - {album}".format(new_tags.year, new_tags.album),
-            "{track_num} {title}.mp3".format(track_num, new_tags.title),
+            "{album_artist}".format(album_artist=new_tags.album_artist),
+            "{year} - {album}".format(year=new_tags.year, album=new_tags.album),
+            "{track_num} {title}.mp3".format(track_num=track_num, title=new_tags.title),
         )
 
 
