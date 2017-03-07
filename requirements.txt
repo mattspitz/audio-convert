@@ -1,3 +1,4 @@
+appdirs==1.4.0
 astroid==1.4.9
 backports.functools-lru-cache==1.3
 configparser==3.5.0
@@ -5,8 +6,11 @@ eyeD3==0.7.10
 isort==4.2.5
 lazy-object-proxy==1.2.2
 mccabe==0.5.3
+packaging==16.8
 py==1.4.32
+Pycolor==1.2.1
 pylint==1.6.4
+pyparsing==2.1.10
 pytest==3.0.5
 recordclass==0.4.2
 six==1.10.0
