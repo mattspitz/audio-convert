@@ -141,14 +141,3 @@ def vorbiscomment_to_tags(vorbiscomment_output):
             or tags.get("encoded-by")
         ),
     )
-
-
-def get_track_filename_representation(disc_num, track_num, num_discs, num_tracks):
-    if num_tracks >= 100:
-        raise Exception("Can't parse more than 99 tracks. Got {}.".format(num_tracks))
-    if num_discs >= 10:
-        return "{:02d}{:02d}".format(disc_num, track_num)
-    elif num_discs > 1:
-        return "{:d}{:02d}".format(disc_num, track_num)
-    else:
-        return "{:02d}".format(track_num)

@@ -7,6 +7,7 @@ import os
 from aclib import (
     audioformat,
     collector,
+    util,
 )
 
 def parse_args():
@@ -57,7 +58,7 @@ class PendingAudioFile(object):
     def new_filename(self):
         new_tags = self.proposed_tags
 
-        track_num = audioformat.util.get_track_filename_representation(
+        track_num = util.get_track_filename_representation(
             new_tags.cd_no, new_tags.track_no,
             self.num_total_discs, new_tags.cd_tracks,
         )
