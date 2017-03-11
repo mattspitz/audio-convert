@@ -4,6 +4,8 @@ import argparse
 import operator
 import os
 
+import pycolor
+
 from aclib import (
     audioformat,
     collector,
@@ -43,10 +45,16 @@ class PendingAudioFile(object):
         self.tag_overrides = tag_overrides
         self.num_total_discs = num_total_discs
 
+        self._current_tags = None
+        self._current_tags_memoized = False
+
 
     @property
     def current_tags(self):
-        return self.audio_file.read_tags()
+        if not self._current_tags_memoized:
+            self._current_tags = self.audio_file.read_tags()
+            self._current_tags_memoized = True
+        return self._current_tags
 
 
     @property
@@ -113,11 +121,31 @@ def get_pending_audio_files(audio_dirs, global_tag_overrides):
     return pending_audio_files
 
 
+def print_pending_audio_files(pending_audio_files):
+    def get_update_str(new_val, old_val):
+        if new_val == old_val:
+            return old_val
+        return "{} ({})".format(
+            pycolor.color_string(unicode(new_val), attribute="bold", fg_color="green"),
+            old_val,
+        )
+
+    # TODO: drop this into `less`; when the user quits, ask to confirm
+
+    for af in pending_audio_files:
+        print get_update_str(af.new_filename, af.audio_file.path)
+        for slot in audioformat.util.Tags.__slots__:
+            print "\t{}: {}".format(
+                slot,
+                get_update_str(getattr(af.proposed_tags, slot), getattr(af.current_tags, slot)),
+            )
+
+
 def main():
     args = parse_args()
 
     pending_audio_files = get_pending_audio_files(args.audio_dirs, get_tag_overrides(args))
-    print pending_audio_files
+    print_pending_audio_files(pending_audio_files)
 
     # print the differences (enter to confirm, Ctrl+C to exit out)
 
