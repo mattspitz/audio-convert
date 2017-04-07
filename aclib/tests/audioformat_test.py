@@ -11,8 +11,6 @@ from .util import (
     MP3_FN,
     VORBIS_FN,
     WAV_FN,
-
-    mktempdir,
 )
 
 from ..audioformat import (
@@ -24,6 +22,10 @@ from ..audioformat import (
 )
 from ..audioformat.util import (
     Tags,
+)
+
+from ..util import (
+    mktempdir,
 )
 
 FAAC_FIXTURE_TAGS = Tags(

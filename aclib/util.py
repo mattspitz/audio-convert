@@ -1,3 +1,7 @@
+import contextlib
+import shutil
+import tempfile
+
 class InvalidDiscTrackException(Exception):
     # thrown when an invalid disc/track combination is fed to get_track_filename_representation
     pass
@@ -18,3 +22,11 @@ def get_track_filename_representation(disc_num, track_num, num_discs, num_tracks
         return "{:d}{:02d}".format(disc_num, track_num)
     else:
         return "{:02d}".format(track_num)
+
+@contextlib.contextmanager
+def mktempdir():
+    tmpdir = tempfile.mkdtemp()
+    yield tmpdir
+    shutil.rmtree(tmpdir)
+
+

@@ -3,6 +3,10 @@ import os
 import shutil
 import tempfile
 
+from ..util import (
+    mktempdir,
+)
+
 FIXTURES_DIR = os.path.join(
     os.path.dirname(__file__),
     "fixtures",
@@ -14,13 +18,6 @@ MP3_FN = os.path.join(FIXTURES_DIR, "makeitso.mp3")
 VORBIS_FN = os.path.join(FIXTURES_DIR, "makeitso.ogg")
 
 WAV_FN = os.path.join(FIXTURES_DIR, "makeitso.wav")
-
-@contextlib.contextmanager
-def mktempdir():
-    tmpdir = tempfile.mkdtemp()
-    yield tmpdir
-    shutil.rmtree(tmpdir)
-
 
 @contextlib.contextmanager
 def mkaudiodir(num_faac=0, num_flac=0, num_mp3=0, num_vorbis=0, num_wav=0, other_ext_map=None):

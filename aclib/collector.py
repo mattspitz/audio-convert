@@ -27,13 +27,7 @@ class AudioFile(object):
         return self.audio_module.read_tags(self.path)
 
 
-    def write_tags(tags):
-        if self.audio_module != mp3:
-            raise NotImplementedError("Can only set tags for MP3s")
-        return self.audio_module(self.path, tags)
-
-
-    def decode(output_fn):
+    def decode(self, output_fn):
         self.audio_module.decode(self.path, output_fn)
 
 
