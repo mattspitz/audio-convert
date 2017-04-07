@@ -39,11 +39,11 @@ class Tags(dict):
         self.artist = artist
         self.title = title
         self.album = album
-        self.year = year
-        self.track_no = track_no
-        self.cd_no = cd_no
-        self.cd_tracks = cd_tracks
-        self.genre_id = genre_id
+        self.year = maybe_convert_int(year, fallback_on_failure=True)
+        self.track_no = maybe_convert_int(track_no, fallback_on_failure=True)
+        self.cd_no = maybe_convert_int(cd_no, fallback_on_failure=True)
+        self.cd_tracks = maybe_convert_int(cd_tracks, fallback_on_failure=True)
+        self.genre_id = maybe_convert_int(genre_id, fallback_on_failure=True)
         self.genre_name = genre_name
         self.comment = comment
         self.composer = composer
@@ -78,17 +78,24 @@ class Tags(dict):
         """Make a copy of this object, optionally overriding any fields"""
         assert all(k in self.__slots__ for k in kwargs)
 
-        tags = Tags()
-        for k in self.__slots__:
+        new_vals = {
             # kwargs take precedence
-            setattr(tags, k, kwargs.get(k, getattr(self, k)))
-        return tags
+            k: kwargs.get(k, getattr(self, k))
+            for k in self.__slots__
+        }
+        return Tags(**new_vals)
+
+    def to_dict(self):
+        return {
+            k: getattr(self, k)
+            for k in self.__slots__
+        }
 
 
 def maybe_convert_int(v, fallback_on_failure=False):
     try:
         return int(v)
-    except ValueError:
+    except (TypeError, ValueError):
         if fallback_on_failure:
             return v
         raise

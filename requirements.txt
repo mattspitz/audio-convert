@@ -12,6 +12,8 @@ Pycolor==1.2.1
 pylint==1.6.4
 pyparsing==2.1.10
 pytest==3.0.5
+PyYAML==3.12
 recordclass==0.4.2
 six==1.10.0
+tabulate==0.7.7
 wrapt==1.10.8

@@ -5,9 +5,12 @@ import itertools
 import operator
 import os
 import shutil
+import subprocess
+import tempfile
 
 import pycolor
 import tabulate
+import yaml
 
 from aclib import (
     audioformat,
@@ -43,7 +46,7 @@ def parse_args():
 
 
 class PendingDisc(object):
-    def __init__(self, disc_overrides, pending_audio_files):
+    def __init__(self, pending_audio_files):
         needs_conversion = [
             paf.needs_conversion()
             for paf in pending_audio_files
@@ -51,7 +54,6 @@ class PendingDisc(object):
         if any(needs_conversion):
             assert all(needs_conversion)
 
-        self.disc_overrides = disc_overrides
         self.pending_audio_files = pending_audio_files
 
     def process_disc(self):
@@ -99,11 +101,11 @@ class PendingDisc(object):
 
 
 class PendingAudioFile(object):
-    def __init__(self, src_audio_file, tag_overrides, num_total_discs):
+    def __init__(self, audio_file, tag_overrides, num_total_discs):
+        self.audio_file = audio_file
         self.tag_overrides = tag_overrides
         self.num_total_discs = num_total_discs
 
-        self._src_audio_file = src_audio_file
         self._current_tags = None
         self._current_tags_memoized = False
 
@@ -115,7 +117,7 @@ class PendingAudioFile(object):
     @property
     def current_tags(self):
         if not self._current_tags_memoized:
-            self._current_tags = self._src_audio_file.read_tags()
+            self._current_tags = self.audio_file.read_tags()
             self._current_tags_memoized = True
         return self._current_tags
 
@@ -125,7 +127,7 @@ class PendingAudioFile(object):
 
     @property
     def current_filename(self):
-        return self._src_audio_file.path
+        return self.audio_file.path
 
     @property
     def new_filename(self):
@@ -147,11 +149,11 @@ class PendingAudioFile(object):
         return os.path.dirname(self.new_filename)
 
     def needs_conversion(self):
-        return self._src_audio_file.ext != ".mp3"
+        return self.audio_file.ext != ".mp3"
 
     def decode(self, output_fn):
         assert not self._decoded_fn
-        self._src_audio_file.decode(output_fn)
+        self.audio_file.decode(output_fn)
         self._decoded_fn = output_fn
 
     @property
@@ -185,7 +187,6 @@ def get_tag_overrides(args):
         for k, v in vars(args).iteritems()
         if k not in ("audio_dirs") and v is not None
     }
-    # TODO allow separate artists per track or somehow editing the artist field
     if overrides["album_artist"] != "Various Artists":
         overrides["artist"] = overrides["album_artist"]
     return overrides
@@ -211,12 +212,54 @@ def get_pending_discs(audio_dirs, global_tag_overrides):
                     overrides,
                     len(audio_dirs),
             ))
-        pending_discs.append(PendingDisc(disc_overrides=disc_overrides, pending_audio_files=pending_audio_files))
+        pending_discs.append(PendingDisc(pending_audio_files=pending_audio_files))
 
     return pending_discs
 
 
-def print_pending_discs(pending_discs):
+def update_pending_discs(initial_pending_discs):
+    paf_by_filename = {}
+    with tempfile.NamedTemporaryFile() as tmpfile:
+        display_yaml = []
+        for disc in initial_pending_discs:
+            paf_yaml = []
+            for paf in disc.pending_audio_files:
+                paf_by_filename[paf.current_filename] = paf
+                paf_yaml.append({
+                    "filename": paf.current_filename,
+                    "proposed_tags": paf.proposed_tags.to_dict(),
+                })
+
+            display_yaml.append({
+                "audio_files": paf_yaml,
+            })
+
+        yaml.safe_dump(display_yaml, tmpfile, default_flow_style=False)
+        tmpfile.flush()
+
+        editor = os.environ.get("EDITOR", "vim")
+        subprocess.call([editor, tmpfile.name])
+
+        tmpfile.seek(0)
+        loaded_yaml = yaml.load(tmpfile)
+
+    pending_discs = []
+    for disc in loaded_yaml:
+        pending_audio_files = []
+        for paf in disc["audio_files"]:
+            cached_af = paf_by_filename.pop(paf.pop("filename"))
+            pending_audio_files.append(
+                PendingAudioFile(
+                    cached_af.audio_file,
+                    paf.pop("proposed_tags"),
+                    cached_af.num_total_discs,
+                ),
+            )
+        pending_discs.append(
+            PendingDisc(pending_audio_files),
+        )
+    assert len(paf_by_filename) == 0, "Expected to find all filenames!"
+
     def get_update_str(new_val, old_val):
         if new_val == old_val:
             return old_val
@@ -229,50 +272,33 @@ def print_pending_discs(pending_discs):
         table = list(itertools.izip_longest(cells[0:(len(cells)/2)], cells[(len(cells)/2):], fillvalue=""))
         print tabulate.tabulate(table, tablefmt="plain")
 
-    # TODO: drop this into `less`; when the user quits, ask to confirm
-
     for disc in pending_discs:
-        disc_overrides = disc.disc_overrides
-        pending_audio_files = disc.pending_audio_files
-
-        cells = []
-        for key, val in sorted(disc_overrides.items()):
-            cells.append("{}: {}".format(
-                key,
-                pycolor.color_string(unicode(val), attribute="bold", fg_color="cyan"),
-            ))
-        print_2_column_table(cells)
-
         for af in pending_audio_files:
             print get_update_str(af.new_filename, af.current_filename)
             cells = []
             for slot in audioformat.util.Tags.__slots__:
-                if slot in disc_overrides:
-                    continue
-
                 cells.append("{}: {}".format(
                     slot,
                     get_update_str(getattr(af.proposed_tags, slot), getattr(af.current_tags, slot)),
                 ))
             print_2_column_table(cells)
 
+    print
+    print "Look good? Press Enter. Ctrl+C to exit."
+    raw_input()
+
+    return pending_discs
+
 
 def main():
     args = parse_args()
 
-    pending_discs = get_pending_discs(args.audio_dirs, get_tag_overrides(args))
-    print_pending_discs(pending_discs)
-
-    print
-    print "Look good? Press any key. Ctrl+C to exit."
-    raw_input()
+    initial_pending_discs = get_pending_discs(args.audio_dirs, get_tag_overrides(args))
+    pending_discs = update_pending_discs(initial_pending_discs)
 
     for disc in pending_discs:
         disc.process_disc()
 
-    # Later...
-        # - allow manual edits for in-place changes of track names, VA-discs, etc
-        # - concurrency
 
 if __name__ == "__main__":
     main()
