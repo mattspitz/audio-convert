@@ -140,10 +140,11 @@ class PendingDisc(object):
 
 
 class PendingAudioFile(object):
-    def __init__(self, audio_file, tag_overrides, num_total_discs):
+    def __init__(self, audio_file, tag_overrides, num_total_discs, output_dir):
         self.audio_file = audio_file
         self.tag_overrides = tag_overrides
         self.num_total_discs = num_total_discs
+        self.output_dir = output_dir
 
         self._current_tags = None
         self._current_tags_memoized = False
@@ -178,9 +179,10 @@ class PendingAudioFile(object):
         )
 
         return os.path.join(
-            "{album_artist}".format(album_artist=new_tags.album_artist).replace("/", "-"),
-            "{year} - {album}".format(year=new_tags.year, album=new_tags.album).replace("/", "-"),
-            "{track_num} {title}.mp3".format(track_num=track_num, title=new_tags.title).replace("/", "-"),
+            self.output_dir,
+            u"{album_artist}".format(album_artist=new_tags.album_artist).replace("/", "-").encode("utf8"),
+            u"{year} - {album}".format(year=new_tags.year, album=new_tags.album).replace("/", "-").encode("utf8"),
+            u"{track_num} {title}.mp3".format(track_num=track_num, title=new_tags.title).replace("/", "-").encode("utf8"),
         )
 
     @property
@@ -263,6 +265,7 @@ def get_pending_discs(audio_dirs, global_tag_overrides, output_dir):
                     audio_file,
                     overrides,
                     len(audio_dirs),
+                    output_dir,
             ))
         pending_discs.append(PendingDisc(pending_audio_files, output_dir))
 
@@ -273,9 +276,9 @@ def print_pending_discs(pending_discs):
     def get_update_str(new_val, old_val):
         if new_val == old_val:
             return old_val
-        return "{} ({})".format(
-            pycolor.color_string(unicode(new_val), attribute="bold", fg_color="green"),
-            old_val,
+        return u"{} ({})".format(
+            pycolor.color_string(str(new_val).decode("utf8"), attribute="bold", fg_color="green"),
+            old_val.decode("utf8") if isinstance(old_val, basestring) else old_val,
         )
 
     def print_2_column_table(cells):
@@ -287,7 +290,7 @@ def print_pending_discs(pending_discs):
             print get_update_str(af.new_filename, af.current_filename)
             cells = []
             for slot in audioformat.util.Tags.__slots__:
-                cells.append("{}: {}".format(
+                cells.append(u"{}: {}".format(
                     slot,
                     get_update_str(getattr(af.proposed_tags, slot), getattr(af.current_tags, slot)),
                 ))
@@ -338,6 +341,7 @@ def update_pending_discs(initial_pending_discs, output_dir):
                     cached_af.audio_file,
                     paf.pop("proposed_tags"),
                     cached_af.num_total_discs,
+                    output_dir,
                 ),
             )
         pending_discs.append(

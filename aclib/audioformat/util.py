@@ -107,7 +107,7 @@ def vorbiscomment_to_tags(vorbiscomment_output):
 
     tags = {}
     for line in vorbiscomment_output.split("\n"):
-        if line:
+        if line and "=" in line:
             key, value = line.split("=", 1)
             tags[key.lower()] = value
 
