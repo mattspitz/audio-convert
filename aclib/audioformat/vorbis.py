@@ -11,7 +11,7 @@ def read_tags(fn):
         "vorbiscomment",
         "-l",
         fn,
-    ]).decode("utf8")
+    ]).decode("utf8", "ignore")
 
     return vorbiscomment_to_tags(output)
 

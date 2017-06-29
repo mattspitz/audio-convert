@@ -11,8 +11,9 @@ EXTENSIONS = [".m4a", ".mp4", ".aac"]
 def read_tags(fn):
     output = subprocess.check_output([
         "faad",
+        "--info",
         fn,
-    ], stderr=subprocess.STDOUT).decode("utf8")
+    ], stderr=subprocess.STDOUT).decode("utf8", "ignore")
 
     tags = {}
     for line in output.split("\n"):

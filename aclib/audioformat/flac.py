@@ -12,7 +12,7 @@ def read_tags(fn):
         "--no-utf8-convert",
         "--export-tags-to=-",
         fn,
-    ]).decode("utf8")
+    ]).decode("utf8", "ignore")
 
     return vorbiscomment_to_tags(output)
 
