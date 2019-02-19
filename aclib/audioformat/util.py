@@ -132,9 +132,9 @@ def vorbiscomment_to_tags(vorbiscomment_output):
         album=tags.get("album"),
         year=get_int("date", fallback_on_failure=True),
 
-        track_no = get_int("tracknumber"),
-        cd_no = get_int("discnumber"),
-        cd_tracks = get_int("tracktotal"),
+        track_no = get_int("tracknumber", fallback_on_failure=True),
+        cd_no = get_int("discnumber", fallback_on_failure=True),
+        cd_tracks = get_int("tracktotal", fallback_on_failure=True),
 
         genre_id=None,
         genre_name=tags.get("genre"),
