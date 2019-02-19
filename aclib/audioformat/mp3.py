@@ -1,4 +1,5 @@
 import subprocess
+import sys
 
 import eyed3
 
@@ -33,7 +34,7 @@ def encode(wav_fns, output_dir):
 
 
 def read_tags(fn):
-    f = eyed3.load(fn)
+    f = eyed3.load(unicode(fn, sys.getfilesystemencoding()))
     if f.tag is None:
         return None
 
@@ -84,7 +85,7 @@ def write_tags(fn, tags):
     """ Writes the tags provided, augmenting what already exists.
 
     Each value is only updated if it's not None. Empty strings clear fields."""
-    f = eyed3.load(fn)
+    f = eyed3.load(unicode(fn, sys.getfilesystemencoding()))
     if not f.tag:
         f.initTag(version=eyed3.id3.ID3_V2_4)
 
