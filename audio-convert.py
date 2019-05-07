@@ -276,10 +276,19 @@ def print_pending_discs(pending_discs):
     def get_update_str(new_val, old_val):
         if new_val == old_val:
             return old_val
-        return u"{} ({})".format(
-            pycolor.color_string(str(new_val).decode("utf8"), attribute="bold", fg_color="green"),
-            old_val.decode("utf8") if isinstance(old_val, basestring) else old_val,
-        )
+
+        new_colored_unicode = pycolor.color_string(
+            # make sure it goes in as a plain string
+            new_val.encode("utf8") if isinstance(new_val, unicode) else str(new_val),
+            attribute="bold",
+            fg_color="green",
+        ).decode("utf8")
+
+        # upgrade old_val to unicode only if it's a plain string
+        old_unicode = old_val.decode("utf8") if isinstance(old_val, str) else old_val
+
+        # neither arg may be a plain string...
+        return u"{} ({})".format(new_colored_unicode, old_unicode)
 
     def print_2_column_table(cells):
         table = list(itertools.izip_longest(cells[0:(len(cells)/2)], cells[(len(cells)/2):], fillvalue=""))
@@ -312,7 +321,9 @@ def update_pending_discs(initial_pending_discs, output_dir):
         for disc in initial_pending_discs:
             paf_yaml = []
             for paf in disc.pending_audio_files:
-                paf_by_filename[paf.current_filename] = paf
+                # save the filename as unicode! it gets saved as unicode in the yaml and otherwise we can't pop it later #facepalm
+                paf_by_filename[paf.current_filename.decode("utf8")] = paf
+
                 paf_yaml.append({
                     "filename": paf.current_filename,
                     "proposed_tags": paf.proposed_tags.to_dict(),
@@ -322,7 +333,7 @@ def update_pending_discs(initial_pending_discs, output_dir):
                 "audio_files": paf_yaml,
             })
 
-        yaml.safe_dump(display_yaml, tmpfile, default_flow_style=False)
+        yaml.safe_dump(display_yaml, tmpfile, default_flow_style=False, allow_unicode=True)
         tmpfile.flush()
 
         editor = os.environ.get("EDITOR", "vim")
