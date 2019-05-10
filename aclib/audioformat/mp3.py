@@ -74,10 +74,10 @@ def read_tags(fn):
         cd_tracks=cd_tracks,
         genre_id=genre_id,
         genre_name=genre_name,
-        comment=extra_tags.get("COMM"),
-        composer=extra_tags.get("TCOM"),
-        original_artist=extra_tags.get("TOPE"),
-        encoded_by=extra_tags.get("TENC"),
+        comment=extra_tags.get("COMM") or None,
+        composer=extra_tags.get("TCOM") or None,
+        original_artist=extra_tags.get("TOPE") or None,
+        encoded_by=extra_tags.get("TENC") or None,
     )
 
 
@@ -138,7 +138,10 @@ def write_tags(fn, tags):
                     return genre
 
             # fall back on just the name
-            return eyed3.id3.Genre(name=tags.genre_name)
+            if tags.genre_name:
+                return eyed3.id3.Genre(name=tags.genre_name)
+            return None
+
         f.tag.genre = _get_genre()
 
     if tags.comment is not None:
