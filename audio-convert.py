@@ -163,7 +163,18 @@ class PendingAudioFile(object):
 
     @property
     def proposed_tags(self):
-        return self.current_tags.copy(**self.tag_overrides)
+        proposed_tags = self.current_tags.copy(**self.tag_overrides)
+
+        # null-out empty-stringed tags
+        proposed_tags.genre_id = proposed_tags.genre_id or None
+        proposed_tags.genre_name = proposed_tags.genre_name or None
+
+        proposed_tags.comment = proposed_tags.comment or None
+        proposed_tags.composer = proposed_tags.composer or None
+        proposed_tags.original_artist = proposed_tags.original_artist or None
+        proposed_tags.encoded_by = proposed_tags.encoded_by or None
+
+        return proposed_tags
 
     @property
     def current_filename(self):

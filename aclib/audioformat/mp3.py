@@ -137,19 +137,14 @@ def write_tags(fn, tags):
                 if genre:
                     return genre
 
-            # fall back on just the name
-            if tags.genre_name:
-                return eyed3.id3.Genre(name=tags.genre_name)
-            return None
+            return eyed3.id3.Genre(name=tags.genre_name)
 
         f.tag.genre = _get_genre()
 
     if tags.comment is not None:
         for c in f.tag.comments:
             f.tag.comments.remove(c.description, c.lang)
-
-        if tags.comment: # empty string clears it
-            f.tag.comments.set(tags.comment)
+        f.tag.comments.set(tags.comment)
 
     if tags.composer is not None:
         f.tag.frame_set.setTextFrame("TCOM", tags.composer)
