@@ -16,41 +16,51 @@ def read_tags(fn):
     ], stderr=subprocess.STDOUT).decode("utf8", "ignore")
 
     tags = {}
+    print output
     for line in output.split("\n"):
-        match = re.match(r"(?P<key>\w+): (?P<val>.+)", line)
+        match = re.match(r"(?P<key>.+?)(?:\s+)?:(?:\s+)?(?P<val>.+)", line)
         if match:
             tags[match.group("key")] = match.group("val")
+    print tags
 
-    artist = tags.get("artist")
+    artist = tags.get("Artist")
 
     def get_int(k, fallback_on_failure=False):
         if k not in tags:
             return None
         return maybe_convert_int(tags[k], fallback_on_failure=fallback_on_failure)
 
+    track_no, cd_tracks = None, None
+    if isinstance(tags.get("Track"), basestring):
+        track_no, cd_tracks = map(int, tags.get("Track").split("/"))
+
+    cd_no = None
+    if isinstance(tags.get("Disc#"), basestring):
+        cd_no, _ = map(int, tags.get("Disc#").split("/"))
+
     return Tags(
         artist=artist,
         album_artist=(
-            tags.get("album_artist")
+            tags.get("Album Artist")
                 or artist
         ),
 
-        title=tags.get("title"),
-        album=tags.get("album"),
-        year=get_int("date", fallback_on_failure=True),
+        title=tags.get("Tille"),
+        album=tags.get("Album"),
+        year=get_int("Date", fallback_on_failure=True),
 
-        track_no=get_int("track"),
-        cd_no=get_int("disc"),
-        cd_tracks=get_int("totaltracks"),
+        track_no=track_no,
+        cd_no=cd_no,
+        cd_tracks=cd_tracks,
 
         genre_id=None,
-        genre_name=tags.get("genre"),
+        genre_name=tags.get("'gen'"),
 
-        comment=tags.get("comment"),
-        composer=tags.get("writer"),
+        comment=tags.get("Comment"),
+        composer=tags.get("Composer"),
         original_artist=None,
 
-        encoded_by=tags.get("tool"),
+        encoded_by=tags.get("Encoder"),
     )
 
 
