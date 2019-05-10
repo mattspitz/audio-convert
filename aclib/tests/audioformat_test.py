@@ -108,6 +108,7 @@ def test_mp3_augment():
             album_artist=u"hello",
             artist=u"", # clears the tag
             track_no=555,
+            comment=u"", # clears the tag
             encoded_by=u"puppy dogs",
         )
         mp3.write_tags(fn, new_tags)
@@ -115,6 +116,7 @@ def test_mp3_augment():
 
         assert tags.album_artist == "hello"
         assert tags.artist is None
+        assert tags.comment is None
         # unchanged
         assert tags.title == u"Make It So"
 

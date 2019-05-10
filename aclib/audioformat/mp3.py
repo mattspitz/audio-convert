@@ -144,7 +144,9 @@ def write_tags(fn, tags):
     if tags.comment is not None:
         for c in f.tag.comments:
             f.tag.comments.remove(c.description, c.lang)
-        f.tag.comments.set(tags.comment)
+
+        if tags.comment: # empty string clears it
+            f.tag.comments.set(tags.comment)
 
     if tags.composer is not None:
         f.tag.frame_set.setTextFrame("TCOM", tags.composer)
