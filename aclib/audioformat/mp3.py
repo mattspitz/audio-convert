@@ -38,8 +38,8 @@ def read_tags(fn):
     if f.tag is None:
         return None
 
-    if f.tag.best_release_date:
-        year = f.tag.best_release_date.year
+    if f.tag.getBestDate():
+        year = f.tag.getBestDate().year
     else:
         year = None
 
