@@ -69,7 +69,9 @@ def test_mp3_encode():
         mp3.encode([WAV_FN], tmpdir)
         encoded_fn = os.path.join(tmpdir, "makeitso.mp3")
         assert os.path.getsize(encoded_fn) > 0
-        assert mp3.read_tags(encoded_fn) is None
+
+        # empty tags
+        assert mp3.read_tags(encoded_fn) == Tags()
 
 def test_mp3_read_tags():
     tags = mp3.read_tags(MP3_FN)

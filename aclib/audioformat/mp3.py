@@ -36,7 +36,7 @@ def encode(wav_fns, output_dir):
 def read_tags(fn):
     f = eyed3.load(unicode(fn, sys.getfilesystemencoding()))
     if f.tag is None:
-        return None
+        return Tags()
 
     if f.tag.getBestDate():
         year = f.tag.getBestDate().year
