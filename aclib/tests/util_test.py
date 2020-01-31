@@ -9,6 +9,7 @@ def test_get_trackfilename_representation():
             (2, 1, 2, 12, "201"),
             (2, 11, 2, 12, "211"),
             (10, 5, 12, 12, "1005"),
+            (1, None, 1, 1, "None"),
 
         ):
         assert util.get_track_filename_representation(disc_num, track_num, num_discs, num_tracks) == expected

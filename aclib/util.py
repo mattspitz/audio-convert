@@ -20,8 +20,10 @@ def get_track_filename_representation(disc_num, track_num, num_discs, num_tracks
         return "{:02d}{:02d}".format(disc_num, track_num)
     elif num_discs > 1:
         return "{:d}{:02d}".format(disc_num, track_num)
-    else:
+    elif isinstance(track_num, int):
         return "{:02d}".format(track_num)
+    else:
+        return "None"
 
 @contextlib.contextmanager
 def mktempdir():

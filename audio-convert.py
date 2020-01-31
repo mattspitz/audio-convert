@@ -20,6 +20,17 @@ from aclib import (
 )
 
 PROCESSED_DIR = "processed"
+UTF8_TYPE = lambda s: unicode(s, "utf8")
+TAG_OVERRIDES = {
+        "album_artist": {"type": UTF8_TYPE, "strip_from_singles": False},
+        "album": {"type": UTF8_TYPE, "strip_from_singles": False},
+        "year": {"type": UTF8_TYPE, "strip_from_singles": False},
+        "genre_name": {"type": UTF8_TYPE, "strip_from_singles": True},
+        "comment": {"type": UTF8_TYPE, "strip_from_singles": True},
+        "composer": {"type": UTF8_TYPE, "strip_from_singles": True},
+        "original_artist": {"type": UTF8_TYPE, "strip_from_singles": True},
+        "encoded_by": {"type": UTF8_TYPE, "strip_from_singles": True},
+}
 
 # courtesy of http://stackoverflow.com/questions/2890146/how-to-force-pyyaml-to-load-strings-as-unicode-objects
 def construct_yaml_str(self, node):
@@ -34,21 +45,20 @@ def parse_args():
         description="Standardize your audio encoding and tagging!",
     )
 
-    utf8_type = lambda s: unicode(s, "utf8")
     # force these tags (optional)
     override_group = parser.add_argument_group("tag_overrides", "ID3 tag overrides")
-    override_group.add_argument("--album_artist", type=utf8_type)
-    override_group.add_argument("--album", type=utf8_type)
-    override_group.add_argument("--year", type=utf8_type)
-    override_group.add_argument("--genre_name", type=utf8_type)
-    override_group.add_argument("--comment", type=utf8_type)
-    override_group.add_argument("--composer", type=utf8_type)
-    override_group.add_argument("--original_artist", type=utf8_type)
-    override_group.add_argument("--encoded_by", type=utf8_type)
+    for k, cfg in TAG_OVERRIDES.iteritems():
+        override_group.add_argument("--" + k, type=cfg["type"])
 
     parser.add_argument(
         "--output_dir",
         default=".",
+    )
+
+    parser.add_argument(
+        "--singles",
+        action="store_true",
+        help="If specified, the single directory passed to 'audio_dirs' represents a list of singles to be tagged as Various Artists and stripped of most metadata.",
     )
 
     parser.add_argument(
@@ -60,6 +70,7 @@ def parse_args():
 
     args = parser.parse_args()
     assert os.path.exists(args.output_dir)
+    assert not (args.singles and len(args.audio_dirs) > 1), "Only process one singles directory at a time."
     return args
 
 
@@ -140,10 +151,11 @@ class PendingDisc(object):
 
 
 class PendingAudioFile(object):
-    def __init__(self, audio_file, tag_overrides, num_total_discs, output_dir):
+    def __init__(self, audio_file, tag_overrides, num_total_discs, is_singles, output_dir):
         self.audio_file = audio_file
         self.tag_overrides = tag_overrides
         self.num_total_discs = num_total_discs
+        self.is_singles = is_singles
         self.output_dir = output_dir
 
         self._current_tags = None
@@ -189,6 +201,13 @@ class PendingAudioFile(object):
             self.num_total_discs, new_tags.cd_tracks,
         )
 
+        if self.is_singles:
+            return os.path.join(
+                self.output_dir,
+                u"Various Artists".encode("utf8"),
+                u"{artist} - {title}.mp3".format(artist=new_tags.artist, title=new_tags.title).replace("/", "-").encode("utf8"),
+            ).encode("utf8")
+
         return os.path.join(
             self.output_dir,
             u"{album_artist}".format(album_artist=new_tags.album_artist).replace("/", "-").encode("utf8"),
@@ -228,9 +247,9 @@ class PendingAudioFile(object):
         assert new_tags.album
         assert new_tags.title
         assert new_tags.cd_no
-        assert new_tags.track_no
-        assert self.num_total_discs
-        assert new_tags.cd_tracks
+        assert new_tags.track_no or self.is_singles
+        assert self.num_total_discs or self.is_singles
+        assert new_tags.cd_tracks or self.is_singles
 
         return audioformat.mp3.write_tags(self._encoded_fn, self.proposed_tags)
 
@@ -247,9 +266,9 @@ class PendingAudioFile(object):
 def get_tag_overrides(args):
     # blah, hacky
     overrides = {
-        k: v
-        for k, v in vars(args).iteritems()
-        if k not in ("audio_dirs", "output_dir") and v is not None
+        k: getattr(args, k)
+        for k in TAG_OVERRIDES
+        if getattr(args, k) is not None
     }
     if ("album_artist" in overrides
             and overrides["album_artist"] != "Various Artists"):
@@ -257,25 +276,37 @@ def get_tag_overrides(args):
     return overrides
 
 
-def get_pending_discs(audio_dirs, global_tag_overrides, output_dir):
+def get_pending_discs(audio_dirs, global_tag_overrides, output_dir, is_singles):
     pending_discs = []
     for disc_num, d in enumerate(audio_dirs, 1):
         audio_files = collector.collect_audio_files(d)
         disc_overrides = dict(global_tag_overrides)
-        disc_overrides["cd_no"] = disc_num
-        disc_overrides["cd_tracks"] = len(audio_files)
+        if is_singles:
+            disc_overrides["album_artist"] = u"Various Artists"
+            disc_overrides["album"] = u"Singles"
+            disc_overrides["year"] = 2019
+            disc_overrides["cd_no"] = 1
+            disc_overrides["cd_tracks"] = None
+            disc_overrides["genre_id"] = None
+            for k, cfg in TAG_OVERRIDES.iteritems():
+                if cfg["strip_from_singles"]:
+                    disc_overrides[k] = ""
+        else:
+            disc_overrides["cd_no"] = disc_num
+            disc_overrides["cd_tracks"] = len(audio_files)
 
         pending_audio_files = []
 
         for track_num, audio_file in enumerate(sorted(audio_files, key=operator.attrgetter("path")), 1):
             overrides = dict(disc_overrides)
-            overrides["track_no"] = track_num
+            overrides["track_no"] = None if is_singles else track_num
 
             pending_audio_files.append(
                 PendingAudioFile(
                     audio_file,
                     overrides,
                     len(audio_dirs),
+                    is_singles,
                     output_dir,
             ))
         pending_discs.append(PendingDisc(pending_audio_files, output_dir))
@@ -317,7 +348,7 @@ def print_pending_discs(pending_discs):
             print_2_column_table(cells)
 
 
-def update_pending_discs(initial_pending_discs, output_dir):
+def update_pending_discs(initial_pending_discs, output_dir, is_singles):
     print_pending_discs(initial_pending_discs)
 
     print
@@ -363,6 +394,7 @@ def update_pending_discs(initial_pending_discs, output_dir):
                     cached_af.audio_file,
                     paf.pop("proposed_tags"),
                     cached_af.num_total_discs,
+                    is_singles,
                     output_dir,
                 ),
             )
@@ -383,8 +415,8 @@ def update_pending_discs(initial_pending_discs, output_dir):
 def main():
     args = parse_args()
 
-    initial_pending_discs = get_pending_discs(args.audio_dirs, get_tag_overrides(args), args.output_dir)
-    pending_discs = update_pending_discs(initial_pending_discs, args.output_dir)
+    initial_pending_discs = get_pending_discs(args.audio_dirs, get_tag_overrides(args), args.output_dir, args.singles)
+    pending_discs = update_pending_discs(initial_pending_discs, args.output_dir, args.singles)
 
     for disc in pending_discs:
         disc.process_disc()
