@@ -279,7 +279,7 @@ def get_tag_overrides(args):
 def get_pending_discs(audio_dirs, global_tag_overrides, output_dir, is_singles):
     pending_discs = []
     for disc_num, d in enumerate(audio_dirs, 1):
-        audio_files = collector.collect_audio_files(d)
+        audio_files = collector.collect_audio_files(d, allow_heterogenous=is_singles)
         disc_overrides = dict(global_tag_overrides)
         if is_singles:
             disc_overrides["album_artist"] = u"Various Artists"

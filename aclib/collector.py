@@ -35,10 +35,10 @@ class AudioFile(object):
         return "AudioFile({}, {})".format(self.audio_module.__name__, self.path)
 
 
-def collect_audio_files(dir_fn):
+def collect_audio_files(dir_fn, allow_heterogenous=False):
     """Finds relevant AudioFiles in the given directory and returns them sorted by filename.
 
-    Throws an Exception if a heterogenous collection of files is discovered."""
+    Throws an Exception if a heterogenous collection of files is discovered and not allowed."""
     modules_by_ext = {}
     for m in (faac, flac, mp3, vorbis, wav):
         for ext in m.EXTENSIONS:
@@ -66,7 +66,8 @@ def collect_audio_files(dir_fn):
             )
         )
 
-    if len(files_by_audio_module) > 1:
+    if (not allow_heterogenous
+            and len(files_by_audio_module) > 1):
         raise InvalidAudioDirectorException(
             "Heterogenous audio types found in {}, where exactly one is allowed. Audio types found: {}".format(
                 dir_fn,
@@ -74,8 +75,10 @@ def collect_audio_files(dir_fn):
             )
         )
 
-    module, fns = files_by_audio_module.items()[0]
-    return [
-        AudioFile(module, os.path.join(dir_fn, path))
-        for path in sorted(fns)
-    ]
+    audio_files = []
+    for module, fns in files_by_audio_module.items():
+        audio_files.extend([
+            AudioFile(module, os.path.join(dir_fn, path))
+            for path in sorted(fns)
+        ])
+    return audio_files
