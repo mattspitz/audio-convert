@@ -102,7 +102,7 @@ def write_tags(fn, tags):
         f.tag.album = tags.album
 
     if tags.year is not None:
-        f.tag.original_release_date = tags.year
+        f.tag.recording_date = tags.year
 
     if tags.cd_no is not None:
         _, num_discs = f.tag.disc_num
