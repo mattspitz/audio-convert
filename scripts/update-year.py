@@ -14,13 +14,16 @@ def update_year(fn):
 
     recording_date = f.tag.recording_date
 
+    rgad = f.tag.frame_set["RGAD"]
+
     if not recording_date:
         raise Exception("uh oh")
-    if not (f.tag.original_release_date or f.tag.release_date):
+    if f.tag.release_date and not f.tag.original_release_date and not rgad:
         return
 
     f.tag.original_release_date = None
-    f.tag.release_date = None
+    f.tag.release_date = recording_date
+    f.tag.frame_set.pop("RGAD", "")
 
     print fn
     raise # don't actually run this
