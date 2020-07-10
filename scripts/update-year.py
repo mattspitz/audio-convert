@@ -12,17 +12,13 @@ def update_year(fn):
 
     f = eyed3.load(os.path.abspath(fn))
 
-    original_release_date = f.tag.original_release_date
     recording_date = f.tag.recording_date
 
-    #if original_release_date and recording_date:
-    #    raise Exception("didn't expect both original_release_date and recording_date for: " + fn)
+    if not recording_date:
+        raise Exception("uh oh")
 
-    if recording_date and not original_release_date:
-        return
-
-    f.tag.original_release_date = None
-    f.tag.recording_date = original_release_date
+    f.tag.original_release_date = recording_date
+    f.tag.release_date = recording_date
 
     print fn
     raise # don't actually run this
