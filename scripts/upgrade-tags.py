@@ -54,7 +54,7 @@ def process_dir(d):
             changed = True
 
         if changed:
-            raise
+            raise # don't actually run this
             f.tag.save(version=eyed3.id3.ID3_V2_4, preserve_file_time=True)
             print "\tsaved"
         else:
