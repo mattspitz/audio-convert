@@ -1,5 +1,7 @@
-eyeD3==0.8.5
+eyeD3==0.8.12
 pathlib==1.0.1
 Pycolor==1.2.1
 python-magic==0.4.15
+PyYAML==5.4.1
 six==1.11.0
+tabulate==0.8.9
