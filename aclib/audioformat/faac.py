@@ -45,7 +45,7 @@ def read_tags(fn):
                 or artist
         ),
 
-        title=tags.get("Tille"),
+        title=tags.get("Title"),
         album=tags.get("Album"),
         year=get_int("Date", fallback_on_failure=True),
 
