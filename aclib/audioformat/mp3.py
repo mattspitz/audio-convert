@@ -1,3 +1,4 @@
+import collections
 import subprocess
 import sys
 
@@ -102,8 +103,13 @@ def write_tags(fn, tags):
         f.tag.album = tags.album
 
     if tags.year is not None:
-        f.tag.recording_date = tags.year
         f.tag.release_date = tags.year
+        try:
+            f.tag.recording_date = tags.year
+        except AttributeError:
+            # eyeD3 assumes a date-like object for non-ID3v2.4 tags, and we can't control the tag we read without modifying it!
+            FakeDate = collections.namedtuple("FakeDate", ("year", "month", "day", "hour", "minute"))
+            f.tag.recording_date = FakeDate(year=tags.year, month=None, day=None, hour=None, minute=None)
 
     if tags.cd_no is not None:
         _, num_discs = f.tag.disc_num
